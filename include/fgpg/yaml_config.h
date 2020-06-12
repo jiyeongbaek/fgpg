@@ -71,6 +71,9 @@ struct YAMLConfig
 
     leaf_size = yamlnode["leaf_size"].as<double> ();
     num_orientation_leaf = yamlnode["num_orientation_leaf"].as<int> ();
+
+    use_hand_mesh_model = yamlnode["use_hand_mesh_model"].as<bool>();
+    hand_model_path = yamlnode["hand_model_path"].as<std::string>();
   }
 
   std::string point_generation_method;
@@ -108,4 +111,7 @@ struct YAMLConfig
 
   double leaf_size;
   int num_orientation_leaf;
+
+  bool use_hand_mesh_model;
+  std::string hand_model_path;
 };

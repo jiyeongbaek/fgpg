@@ -57,3 +57,6 @@ display_preliminary_points: true # not yet (always true)
 
 leaf_size: 0.05
 num_orientation_leaf: 3
+
+use_hand_mesh_model: true
+hand_model_path: /home/user/hand_model

@@ -51,7 +51,7 @@ const std::vector <GraspData> & GraspPointGenerator::getGraspData()
 void GraspPointGenerator::setConfig(const YAMLConfig &config)
 {
   config_ = config;
-  collision_check_.gripper_model_.makeRealModel();
+  collision_check_.gripper_model_.makeRealModel(config);
   // collision_check_.gripper_model_.setParams(
   //   config_.gripper_params[0], config_.gripper_params[1], config_.gripper_params[2], 
   //   config_.gripper_params[3], config_.gripper_params[4], config_.gripper_params[5]);

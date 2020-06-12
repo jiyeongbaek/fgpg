@@ -46,6 +46,8 @@
 #include <fcl/collision.h>
 #include <fcl/distance.h>
 
+#include <fgpg/yaml_config.h>
+
 #include <ros/package.h>
 #include <cmath>
 typedef fcl::OBBRSS BV;
@@ -69,7 +71,6 @@ struct FCLGripper
   BVHMPtr g[3];
   Eigen::Isometry3d t[3];
   pcl::PolygonMesh mesh[3];
-  std::string path = "/home/jiyeong/catkin_ws/src/3_constraint_planning/fgpg";
 
   double DXL_RAD = 13.5;
   Eigen::Isometry3d T_DXL_CTR;
@@ -118,8 +119,9 @@ struct FCLGripper
   //   t[3].translation() << -d - x1l - x4l / 2, 0, 0;
   // }
 
-  void makeRealModel()
+  void makeRealModel(const YAMLConfig &config)
   {
+    const std::string & path = config.hand_model_path;
     pcl::io::loadPolygonFile(path + "/mesh/gripper_base.stl", mesh[0]);
     std::vector<TrianglePlaneData> triangles0 = buildTriangleData(mesh[0]);
 
@@ -164,7 +166,6 @@ struct FCLGripper
     // right
     finger_frame.translation() << 0, 0.05, 0.0745;
     t[2] = t[0] * finger_frame;
-    
   }
 
   BVHMPtr loadMesh(const std::vector<TrianglePlaneData> &mesh)
