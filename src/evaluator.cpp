@@ -73,7 +73,7 @@ int main(int argc, char** argv)
   // grasp_transforms.resize(5);
   
   FCLGripper gripper_model;
-  gripper_model.setParams(config.gripper_params[0], config.gripper_params[1], config.gripper_params[2], config.gripper_params[3],config.gripper_params[4],config.gripper_params[5]);
+  // gripper_model.setParams(config.gripper_params[0], config.gripper_params[1], config.gripper_params[2], config.gripper_params[3],config.gripper_params[4],config.gripper_params[5]);
 
   // Mesh Load
   pcl::PolygonMesh mesh;

@@ -19,6 +19,8 @@ std::string remove_extension(const std::string& filename) {
 
 int main(int argc, char** argv)
 {
+  ros::init(argc, argv, "fgpg");
+
   bool use_custom_output_name = false;
   std::string custom_output_name;
   if (argc<3) return -1;
