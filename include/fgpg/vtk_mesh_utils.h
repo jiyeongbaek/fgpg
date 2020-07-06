@@ -94,3 +94,30 @@ static std::vector<TrianglePlaneData> buildTriangleData(pcl::PolygonMesh & mesh)
 
   return triangles;
 }
+void mTomm(pcl::PolygonMesh & mesh)
+{
+  Eigen::Matrix4d transform;
+  transform.setIdentity();
+  transform.diagonal() << 0.001, 0.001, 0.001, 1;
+  pcl::PointCloud<pcl::PointXYZ> cloud;
+  pcl::fromPCLPointCloud2(mesh.cloud, cloud);
+  pcl::transformPointCloud(cloud, cloud, transform);
+  pcl::toPCLPointCloud2(cloud, mesh.cloud);
+}
+
+pcl::PolygonMesh transformPos(pcl::PolygonMesh mesh, Eigen::Isometry3d transform)
+{
+  pcl::PolygonMesh transform_mesh = mesh;
+  Eigen::Matrix4d transform_matrix;
+  transform_matrix.setZero();
+  transform_matrix.block<3, 3>(0, 0) = transform.linear();
+  transform_matrix.block<3, 1>(0, 3) = transform.translation();
+  transform_matrix(3, 3) = 1;
+
+  pcl::PointCloud<pcl::PointXYZ> cloud;
+  pcl::fromPCLPointCloud2(transform_mesh.cloud, cloud);
+  pcl::transformPointCloud(cloud, cloud, transform_matrix);
+
+  pcl::toPCLPointCloud2(cloud, transform_mesh.cloud);
+  return transform_mesh;
+}

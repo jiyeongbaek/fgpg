@@ -37,7 +37,13 @@ struct GraspData
 {
   std::vector<Eigen::Vector3d> points;
   Eigen::Isometry3d hand_transform;
+  bool collision_data[100] = {false};
   bool available {false};
+  
+  GraspData()
+  {
+    hand_transform.setIdentity();
+  }
   
   friend std::ostream & operator << (std::ostream &out, const GraspData &d)
   {

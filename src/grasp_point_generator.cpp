@@ -51,10 +51,7 @@ const std::vector <GraspData> & GraspPointGenerator::getGraspData()
 void GraspPointGenerator::setConfig(const YAMLConfig &config)
 {
   config_ = config;
-  collision_check_.gripper_model_.makeRealModel(config);
-  // collision_check_.gripper_model_.setParams(
-  //   config_.gripper_params[0], config_.gripper_params[1], config_.gripper_params[2], 
-  //   config_.gripper_params[3], config_.gripper_params[4], config_.gripper_params[5]);
+  collision_check_.gripper_model_.setParams(config);
 }
 
 void GraspPointGenerator::setMesh(const std::vector <TrianglePlaneData> triangle_mesh)
@@ -152,14 +149,31 @@ void GraspPointGenerator::display(pcl::PolygonMesh& mesh)
         collision_check_.gripper_model_.drawGripper(vis2, grasp.hand_transform, std::to_string(id_num++),
           config_.gripper_color[0],config_.gripper_color[1],config_.gripper_color[2], 
           config_.gripper_opacity, grasp.getDist()/2);
-
+        break;
       }
-
+      int i = 0;
       if(config_.display_collision)
       {
         for(auto & grasp : grasp_cand_in_collision_)
         {
+          PointT point;
+        GraspPointGenerator::eigen2PCL(grasp.points[0], grasp.hand_transform.linear().row(2), point, 
+                  config_.point_color[0]*255,config_.point_color[1]*255,config_.point_color[2]*255);
+        
+        candid_result_cloud->points.push_back(point);
+        candid_result_cloud->width++;
+
+        PointT pcl_point_2;
+        GraspPointGenerator::eigen2PCL(grasp.points[1], grasp.hand_transform.linear().row(2), point, 
+                  config_.point_color[0]*255,config_.point_color[1]*255,config_.point_color[2]*255);
+        
+        candid_result_cloud->points.push_back(point);
+        candid_result_cloud->width++;   
             collision_check_.gripper_model_.drawGripper(vis2, grasp.hand_transform, std::to_string(id_num++),1,0,0,config_.gripper_opacity, grasp.getDist()/2);
+            std::cout << "hi col" << grasp.hand_transform.matrix() << std::endl;
+            i++;
+            if (i == 10)
+              break;
         }
       }
       vis2.spin();

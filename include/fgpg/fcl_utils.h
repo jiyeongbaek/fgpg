@@ -72,7 +72,7 @@ struct FCLGripper
   Eigen::Isometry3d t[3];
   pcl::PolygonMesh mesh[3];
 
-  double DXL_RAD = 13.5;
+  double DXL_RAD = 13.5 * M_PI / 180 ;
   Eigen::Isometry3d T_DXL_CTR;
 
   /// d: depth of the gripper
@@ -85,19 +85,16 @@ struct FCLGripper
   /// z4l: size of bar of the gripper (width)
   double l, h, d, x1l, y1l, z2l, x4l, z4l;
 
-  // void setParams(double id, double ih, double il, double ix1l, double iy1l, double iz2l, double ix4l = 0.08, double iz4l = 0.02)
-  // {
-  //   l = il;
-  //   h = ih;
-  //   d = id;
-  //   x1l = ix1l;
-  //   y1l = iy1l;
-  //   z2l = iz2l;
-  //   x4l = ix4l;
-  //   z4l = iz4l;
+  void setParams(const YAMLConfig &config_)
+  {
 
-  //   makeModel();
-  // }
+    l =config_.gripper_params[2];
+    h = config_.gripper_params[1];
+    d = config_.gripper_params[0];
+    makeRealModel(config_);
+
+  }
+
   // void makeModel()
   // {
   //   double z1l = 2 * (h + z2l);
@@ -131,6 +128,8 @@ struct FCLGripper
     pcl::io::loadPolygonFile(path + "/mesh/gripper_tip_right.stl", mesh[2]);
     std::vector<TrianglePlaneData> triangles2 = buildTriangleData(mesh[2]);
 
+    for (int i = 0; i < 3; i++)
+      mTomm(mesh[i]);
 
     g[0] = std::make_shared<BVHM>();
     g[0] = loadMesh(triangles0);
@@ -141,31 +140,36 @@ struct FCLGripper
     g[2] = std::make_shared<BVHM>();
     g[2] = loadMesh(triangles2);
       
-    T_DXL_CTR.linear() << cos(DXL_RAD), 0, -sin(DXL_RAD),
-                          0, 1.0000, 0,
-                          sin(DXL_RAD), 0, cos(DXL_RAD);
-    T_DXL_CTR.translation() << 0.0129, 0, 0.1132;
+    T_DXL_CTR.linear() << cos(DXL_RAD), 0,  -sin(DXL_RAD),
+                             0,        1.0,  0,
+                          sin(DXL_RAD), 0,   cos(DXL_RAD);
+    T_DXL_CTR.translation() << 0.0129, 0, 0.1132; // 0.0129, -0.1132, 0;
     Eigen::Isometry3d temp_frame;
-    temp_frame.linear() << 0, 1, 0,
-                          0, 0, 1,
-                          1, 0, 0;
+    temp_frame.setIdentity();
+    temp_frame.linear() << 0, 0, 1,
+                          -1, 0, 0,
+                          0, -1, 0;
     Eigen::Isometry3d base_frame;
-    base_frame.linear() = Eigen::AngleAxisd(-M_PI/2, Eigen::Vector3d::UnitX())
+    base_frame.setIdentity();
+    base_frame.linear() = Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitX())
                           * Eigen::AngleAxisd(0, Eigen::Vector3d::UnitY())
-                          * Eigen::AngleAxisd(-M_PI/2, Eigen::Vector3d::UnitZ()).toRotationMatrix();
-    t[0] = (T_DXL_CTR * temp_frame).inverse() * base_frame;
+                          * Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+    t[0] =temp_frame* ( base_frame * T_DXL_CTR ).inverse();
+    
+    // t[0] = base_frame;
+
 
     // left
-    Eigen::Isometry3d finger_frame;
-    finger_frame.linear() = Eigen::AngleAxisd(-M_PI/2, Eigen::Vector3d::UnitX())
-                          * Eigen::AngleAxisd(0, Eigen::Vector3d::UnitY())
-                          * Eigen::AngleAxisd(-M_PI/2, Eigen::Vector3d::UnitZ()).toRotationMatrix();
-    finger_frame.translation() << 0, -0.05, 0.0745;
-    t[1] = t[0] * finger_frame;
-
+    Eigen::Isometry3d finger_frame1, finger_frame2;
+    finger_frame1.setIdentity();
+    finger_frame2.setIdentity();
+    finger_frame1.translation() = Eigen::Vector3d(0.05, -0.0745, 0.0);
+    t[1] = t[0] * finger_frame1;
     // right
-    finger_frame.translation() << 0, 0.05, 0.0745;
-    t[2] = t[0] * finger_frame;
+    finger_frame2.translation() = Eigen::Vector3d(-0.05, -0.0745, 0.0);
+    t[2] = t[0] * finger_frame2;
+
+    std::cout << "***********" << std::endl;
   }
 
   BVHMPtr loadMesh(const std::vector<TrianglePlaneData> &mesh)
@@ -183,9 +187,9 @@ struct FCLGripper
         tri[i] = points.size();
         points.push_back(
             fcl::Vec3f(
-                tri_plane.points[i](0) * 0.001,
-                tri_plane.points[i](1) * 0.001,
-                tri_plane.points[i](2) * 0.001));
+                tri_plane.points[i](0) ,
+                tri_plane.points[i](1) ,
+                tri_plane.points[i](2) ));
       }
       triangles.push_back(tri);
     }
@@ -211,31 +215,13 @@ struct FCLGripper
                    double r, double g_c, double b, double opacity,
                    double dist = -1.0)
   {
-    if (dist < 0)
-      changeWidth(h);
-    else
-      changeWidth(dist);
-    
     for (int i = 0; i < 3; i++)
     {
-      // auto T = gripper_transform * t[i];
-      // Eigen::Vector3d position(T.translation());
-      // Eigen::Quaterniond quat(T.linear());
-      // Eigen::Vector3f posf;
-      // Eigen::Quaternionf quatf;
-
-      // posf = position.cast<float>();
-      // quatf = quat.cast<float>();
-      // std::string id_total = "cube" + id + std::to_string(i);
-      // vis.addCube(posf, quatf, g[i]->side[0], g[i]->side[1], g[i]->side[2], id_total);
-      // vis.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, r, g_c, b, id_total);
-      // vis.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, opacity, id_total, 0);
-
-      // std::string id_total_line = "cube_line" + id + std::to_string(i);
-      // vis.addCube(posf, quatf, g[i]->side[0], g[i]->side[1], g[i]->side[2], id_total_line);
-      // vis.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 0, id_total_line);
-      // vis.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, opacity, id_total_line, 0);
-      // vis.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, id_total_line, 0);
+      auto T = gripper_transform * t[i];
+      std::string id_total = "gripper" + id + std::to_string(i);
+      pcl::PolygonMesh mesh_transform = transformPos(mesh[i], T);
+      vis.addPolygonMesh(mesh_transform, id_total, 0);
+      vis.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, r, g_c, b, id_total);
     }
   }
 
@@ -374,10 +360,9 @@ public:
     fcl::CollisionResult result[3];
     fcl::Transform3f init;
     init.setIdentity();
-    // gripper_model_.changeWidth(distance);
 
     bool is_collided = false;
-    for (int i = 0; i < 3 ; ++i)
+    for (int i = 0; i < 2 ; ++i)
     {
       Eigen::Isometry3d cur_transform = gripper_transform * gripper_model_.t[i];
       fcl::Transform3f fcl_transform;
@@ -386,12 +371,15 @@ public:
       fcl::collide(mesh_model_.get(), init, gripper_model_.g[i].get(), fcl_transform,
                    request, result[i]);      
       if (result[i].isCollision() == true)
-      {
+      { 
+        std::cout << "Collision in " << i << std::endl;
+        std::cout << cur_transform.matrix() << std::endl;
         is_collided = true;
-        break;
+        // break;
       }
     }
 
     return !is_collided;
+    // return true;
   }
 };
